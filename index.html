@@ -331,6 +331,17 @@ button{cursor:pointer;border:0;color:var(--text)}
           <option value="permission">Permiso</option>
         </select>
       </label>
+
+      <!-- RANGO DE FECHAS -->
+      <div id="rangeSection" style="display:none;gap:10px;margin-top:2px">
+        <p style="margin:0 0 6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Aplicar a un rango de fechas</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <label class="field"><span>Fecha inicio</span><input type="date" id="rangeFrom"></label>
+          <label class="field"><span>Fecha fin</span><input type="date" id="rangeTo"></label>
+        </div>
+        <p id="rangeInfo" style="margin:4px 0 0;font-size:12px;color:var(--purple2);font-weight:700"></p>
+      </div>
+
       <label class="field">
         <span>Nota</span>
         <textarea id="dialogNote" rows="3" placeholder="Ej. Curso de seguridad, cambio de turno, horas extra..."></textarea>
@@ -630,12 +641,37 @@ function openDialog(date) {
   const sel=$("#dialogUser"); const users=getUsersForView();
   sel.innerHTML=users.map(u=>`<option value="${u.id}">${escapeHtml(u.name)}</option>`).join("");
   if (users[0]) sel.value=users[0].id;
-  loadDialogUser(); $("#dayDialog").showModal();
+  // Pre-fill range with the clicked date
+  $("#rangeFrom").value=date;
+  $("#rangeTo").value=date;
+  updateRangeInfo();
+  loadDialogUser();
+  $("#dayDialog").showModal();
 }
 
 function loadDialogUser() {
   const uid=$("#dialogUser").value; const ov=state.overrides[overrideKey(uid,selectedDate)];
-  $("#dialogStatus").value=ov?.status || "auto"; $("#dialogNote").value=ov?.note || "";
+  const status=ov?.status || "auto";
+  $("#dialogStatus").value=status;
+  $("#dialogNote").value=ov?.note || "";
+  toggleRangeSection(status);
+}
+
+function toggleRangeSection(status) {
+  // Show range section for types that make sense as multi-day blocks
+  const multiDay=["vacation","course","overtime","permission","rest","work"];
+  const rs=$("#rangeSection");
+  rs.style.display=multiDay.includes(status) ? "block" : "none";
+  updateRangeInfo();
+}
+
+function updateRangeInfo() {
+  const from=$("#rangeFrom").value; const to=$("#rangeTo").value;
+  if (!from||!to) { $("#rangeInfo").textContent=""; return; }
+  const d1=parseYMD(from); const d2=parseYMD(to);
+  if (d2<d1) { $("#rangeInfo").textContent="⚠ La fecha fin debe ser igual o mayor a inicio"; return; }
+  const days=diffDays(d1,d2)+1;
+  $("#rangeInfo").textContent=days===1?"Se aplica a 1 día":`Se aplica a ${days} días (${from} → ${to})`;
 }
 
 function switchView(view) {
@@ -671,15 +707,45 @@ $("#userForm").addEventListener("submit",e=>{
 });
 
 $("#dialogUser").addEventListener("change",loadDialogUser);
+$("#dialogStatus").addEventListener("change",()=>toggleRangeSection($("#dialogStatus").value));
+$("#rangeFrom").addEventListener("change",updateRangeInfo);
+$("#rangeTo").addEventListener("change",updateRangeInfo);
+
 $("#saveDay").addEventListener("click",()=>{
   const uid=$("#dialogUser").value; const status=$("#dialogStatus").value;
-  const note=$("#dialogNote").value.trim(); const key=overrideKey(uid,selectedDate);
-  if(status==="auto" && !note) delete state.overrides[key];
-  else state.overrides[key]={status,note};
+  const note=$("#dialogNote").value.trim();
+  const from=$("#rangeFrom").value; const to=$("#rangeTo").value;
+
+  // Build list of dates to apply
+  let dates=[];
+  if (from && to && $("#rangeSection").style.display!=="none") {
+    const d1=parseYMD(from); const d2=parseYMD(to);
+    if (d2>=d1) {
+      for (let d=new Date(d1); d<=d2; d=addDays(d,1)) dates.push(ymd(d));
+    }
+  }
+  if (!dates.length) dates=[selectedDate];
+
+  dates.forEach(date=>{
+    const key=overrideKey(uid,date);
+    if(status==="auto" && !note) delete state.overrides[key];
+    else state.overrides[key]={status,note};
+  });
+
   $("#dayDialog").close(); render();
 });
 $("#deleteOverride").addEventListener("click",()=>{
-  delete state.overrides[overrideKey($("#dialogUser").value,selectedDate)];
+  const uid=$("#dialogUser").value;
+  const from=$("#rangeFrom").value; const to=$("#rangeTo").value;
+  let dates=[];
+  if (from && to && $("#rangeSection").style.display!=="none") {
+    const d1=parseYMD(from); const d2=parseYMD(to);
+    if (d2>=d1) {
+      for (let d=new Date(d1); d<=d2; d=addDays(d,1)) dates.push(ymd(d));
+    }
+  }
+  if (!dates.length) dates=[selectedDate];
+  dates.forEach(date=>delete state.overrides[overrideKey(uid,date)]);
   $("#dayDialog").close(); render();
 });
 
