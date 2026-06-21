@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vol-turnos-v1.0.0';
+const CACHE_NAME = 'vol-turnos-v1.1.0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -25,11 +25,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-
   if (request.method !== 'GET') return;
 
-  // Si Android abre el acceso directo en una ruta vieja o inexistente,
-  // regresamos index.html para evitar pantalla 404.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(() => caches.match('./index.html'))

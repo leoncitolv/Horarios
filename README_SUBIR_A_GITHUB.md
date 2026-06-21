@@ -1,23 +1,24 @@
-# Vol turnos · PWA GitHub Pages
+# Vol turnos · actualización visual
 
-Archivos incluidos:
+## Corrección aplicada
+- Rojo = días de trabajo / turno nocturno.
+- Verde = días de descanso.
+- El usuario actual ya no cambia el fondo a azul; ahora solo se marca con borde/glow para no perder el significado rojo/verde.
+- Se agregó panel **Colores de estados** en la pestaña **Personal**.
+- Puedes editar colores de:
+  - Trabajo
+  - Descanso
+  - Vacaciones
+  - Curso
+  - Tiempo extra
+  - Permiso
+
+## GitHub Pages
+Sube todos estos archivos en la raíz del repositorio:
 - `index.html`
 - `manifest.webmanifest`
 - `service-worker.js`
 - `icon-192.png`
 - `icon-512.png`
 
-## Cómo subirlo a GitHub
-1. Sube estos archivos en la raíz del repositorio, no dentro de una carpeta.
-2. En GitHub Pages, publica desde `main` / root.
-3. Abre la URL terminada en `/` o `/index.html`.
-4. En Android, abre Chrome > menú ⋮ > Agregar a pantalla principal.
-5. En iPhone, abre Safari > Compartir > Agregar a pantalla de inicio.
-
-## Corrección realizada
-El error 404 en Android normalmente aparece porque el acceso directo intenta abrir una ruta que no existe, por ejemplo `horarios.html`. 
-El manifest ahora usa:
-- `start_url: "./"`
-- `scope: "./"`
-
-También se agregó `service-worker.js` con fallback a `index.html`.
+Después elimina el acceso directo anterior en Android y créalo de nuevo desde Chrome.
